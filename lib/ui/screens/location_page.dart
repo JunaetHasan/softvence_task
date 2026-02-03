@@ -64,13 +64,13 @@ class LocationPage extends StatelessWidget {
                     side: BorderSide(color: Colors.grey.withAlpha(150)),
                   ),
                   onPressed: () async {
+
+
                     bool granted =
                         await LocationPermissionService.requestLocationPermission();
                     if (granted) {
-                      print("Location granted");
-                    } else {
-                      print("Location denied");
-                    }
+                    } else {}
+                    Get.to(() => HomePage());
                   },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,

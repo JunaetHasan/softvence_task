@@ -1,10 +1,10 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:task_assignment/widgets/fetch_real_location.dart';
-import 'package:task_assignment/helper_functions/notification_service.dart';
-import '../../helper_functions/alarm_model.dart' show AlarmModel;
-import '../../utils/app_color.dart' show AppColor;
+import 'package:permission_handler/permission_handler.dart';
+import '../../helper_functions/notification_service.dart';
+import '../../helper_functions/alarm_model.dart';
 import '../../widgets/alram_text.dart';
+import '../../widgets/fetch_real_location.dart';
+import '../../utils/app_color.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,14 +15,27 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final NotificationService _service = NotificationService();
+  final List<AlarmModel> alarms = [];
+  int _alarmId = 0;
 
-  String _formatTime(DateTime time) {
-    return TimeOfDay.fromDateTime(time).format(context);
+  @override
+  void initState() {
+    super.initState();
+    _service.initNotification();
+    requestNotificationPermission();
   }
 
-  String _formatDate(DateTime time) {
-    return '${_weekDay(time.weekday)} ${time.day} ${_month(time.month)}';
+  Future<void> requestNotificationPermission() async {
+    if (await Permission.notification.isDenied) {
+      await Permission.notification.request();
+    }
   }
+
+  String _formatTime(DateTime time) =>
+      TimeOfDay.fromDateTime(time).format(context);
+
+  String _formatDate(DateTime time) =>
+      '${_weekDay(time.weekday)} ${time.day} ${_month(time.month)}';
 
   String _weekDay(int day) =>
       ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day - 1];
@@ -41,19 +54,16 @@ class _HomePageState extends State<HomePage> {
     'Nov',
     'Dec',
   ][month - 1];
-  int _alarmId = 0;
-  final List<AlarmModel> alarms = [];
 
   Future<void> _addAlarm() async {
     final TimeOfDay? pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
     );
-
     if (pickedTime == null) return;
 
-    final DateTime now = DateTime.now();
-    final DateTime alarmTime = DateTime(
+    final now = DateTime.now();
+    final alarmTime = DateTime(
       now.year,
       now.month,
       now.day,
@@ -62,53 +72,23 @@ class _HomePageState extends State<HomePage> {
     );
 
     final alarm = AlarmModel(id: _alarmId++, time: alarmTime);
-
     setState(() => alarms.add(alarm));
 
-    await _service.setAlarm(alarm.time, alarm.id);
-  }
-
-  Future<void> _editAlarm(AlarmModel alarm) async {
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(alarm.time),
-    );
-    if (pickedTime == null) return;
-    final DateTime now = DateTime.now();
-    final DateTime newTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      pickedTime.hour,
-      pickedTime.minute,
-    );
-
-    setState(() => alarm.time = newTime);
-
-    await _service.cancelAlarm(alarm.id);
     await _service.setAlarm(alarm.time, alarm.id);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: const Color(0xFF0B0F2F),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(left: 16, bottom: 108),
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 108),
         child: FloatingActionButton(
           backgroundColor: AppColor.buttonColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadiusGeometry.circular(100),
           ),
           onPressed: _addAlarm,
-
-          //_addAlarm,
-          child: const Icon(
-            Icons.add,
-            size: 24,
-            weight: 24,
-            color: Colors.white,
-          ),
+          child: const Icon(Icons.add, color: Colors.white, size: 30),
         ),
       ),
       body: Container(
@@ -124,59 +104,54 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.all(16),
             children: [
               Column(
+
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  //text
+                  //SizedBox(height: 56,),
                   FetchRealLocation(),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 24),
 
                   AlramText.AlarmText(),
-                  SizedBox(height: 20),
-
-                  ...alarms.map((alarm) {
-                    return Container(
+                  const SizedBox(height: 20),
+                  ...alarms.map(
+                    (alarm) => Container(
                       margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
                       height: 70,
                       decoration: BoxDecoration(
-                        color: Color(0XFF201A43),
+                        color: const Color(0XFF201A43),
                         borderRadius: BorderRadius.circular(60),
                       ),
                       child: Row(
                         children: [
                           GestureDetector(
                             onTap: () async {
-                              final TimeOfDay? pickedTime =
-                                  await showTimePicker(
-                                    context: context,
-                                    initialTime: TimeOfDay.fromDateTime(
-                                      alarm.time,
-                                    ),
-                                  );
-
+                              final pickedTime = await showTimePicker(
+                                context: context,
+                                initialTime: TimeOfDay.fromDateTime(alarm.time),
+                              );
                               if (pickedTime == null) return;
-
-                              final DateTime now = DateTime.now();
-                              final DateTime newTime = DateTime(
+                              final now = DateTime.now();
+                              final newTime = DateTime(
                                 now.year,
                                 now.month,
                                 now.day,
                                 pickedTime.hour,
                                 pickedTime.minute,
                               );
-
-                              setState(() {
-                                alarm.time = newTime;
-                              });
-
-                              await _service.cancelAlarm(alarm.id);
-                              await _service.setAlarm(alarm.time, alarm.id);
+                              setState(() => alarm.time = newTime);
+                              if (alarm.isOn) {
+                                await _service.cancelAlarm(alarm.id);
+                                await _service.setAlarm(alarm.time, alarm.id);
+                              }
                             },
                             child: Text(
                               _formatTime(alarm.time),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
+                                  fontWeight: FontWeight.w400
+
                               ),
                             ),
                           ),
@@ -186,35 +161,43 @@ class _HomePageState extends State<HomePage> {
                             style: TextStyle(
                               color: Colors.grey.shade400,
                               fontSize: 16,
+                                fontWeight: FontWeight.w400
+
                             ),
                           ),
-                          SizedBox(width: 5),
-                          Text(
-                            '2026',
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 16,
-                            ),
-                          ),
-                          SizedBox(width: 5),
+                          SizedBox(width: 8,),
+                          Text('2026',style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400
+                          ),),
+                          const SizedBox(width: 8),
                           Switch(
-                            inactiveThumbColor: Colors.black,
+                            value: alarm.isOn,
                             activeColor: Colors.white,
                             activeTrackColor: AppColor.buttonColor,
-                            value: alarm.isOn,
+                            inactiveThumbColor: Colors.black,
                             onChanged: (value) async {
                               setState(() => alarm.isOn = value);
                               if (value) {
                                 await _service.setAlarm(alarm.time, alarm.id);
                               } else {
                                 await _service.cancelAlarm(alarm.id);
+                                if (await Permission.notification.isGranted) {
+                                  await _service.showNotification(
+                                    id: alarm.id,
+                                    title: 'Alarm Off',
+                                    body:
+                                        'Your alarm has ${_formatTime(alarm.time)} been turned off.',
+                                  );
+                                }
                               }
                             },
                           ),
                         ],
                       ),
-                    );
-                  }),
+                    ),
+                  ),
                 ],
               ),
             ],

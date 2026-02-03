@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:task_assignment/app/task_assignment.dart';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 import 'helper_functions/notification_service.dart';
 
@@ -30,6 +31,7 @@ void main () async {
   /////
   final service = NotificationService();
   await service.initNotification();
+  tz.initializeTimeZones();
 
 
 

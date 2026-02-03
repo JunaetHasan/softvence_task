@@ -1,16 +1,16 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  FlutterLocalNotificationsPlugin();
 
   Future<void> initNotification() async {
-    tz.initializeTimeZones();
+    tzdata.initializeTimeZones();
 
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const InitializationSettings settings = InitializationSettings(
       android: androidSettings,
@@ -33,20 +33,46 @@ class NotificationService {
         android: AndroidNotificationDetails(
           'alarm_channel',
           'Alarm Notifications',
-          channelDescription: 'Alarm notification channel',
+          channelDescription: 'Alarm notification',
           importance: Importance.max,
           priority: Priority.high,
-          fullScreenIntent: true,
           playSound: true,
+          fullScreenIntent: true,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexact,
       uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
   Future<void> cancelAlarm(int id) async {
     await _notificationsPlugin.cancel(id);
+  }
+
+  Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    const AndroidNotificationDetails androidDetails =
+    AndroidNotificationDetails(
+      'alarm_channel',
+      'Alarm Notifications',
+      channelDescription: 'Alarm notification ',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+    );
+
+    const NotificationDetails notificationDetails =
+    NotificationDetails(android: androidDetails);
+
+    await _notificationsPlugin.show(
+      id,
+      title,
+      body,
+      notificationDetails,
+    );
   }
 }

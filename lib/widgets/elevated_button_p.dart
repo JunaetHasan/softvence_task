@@ -15,10 +15,10 @@ class ElevatedButtonE extends StatelessWidget {
       //width: 50,
       height: 55,
       child: Padding(
-        padding: const EdgeInsets.only(left: 12),
+        padding: const EdgeInsets.only(left: 20,right: 20),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.only(left: 180, right: 180),
+            padding: EdgeInsets.only(left: 170, right: 170),
             backgroundColor: AppColor.buttonColor,
             foregroundColor: Colors.white,
           ),
